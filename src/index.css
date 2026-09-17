@@ -1,0 +1,133 @@
+/* src/index.css */
+:root {
+  --bg-dark: #0b0f19;
+  --bg-panel: #131a26;
+  --bg-input: #1a2333;
+  --border-color: #26354a;
+  --text-main: #f1f5f9;
+  --text-muted: #64748b;
+  --primary-blue: #2563eb;
+  --accent-yellow: #fbbf24;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Distribución de la pantalla en dos columnas estables */
+.layout-contenedor {
+  display: grid;
+  grid-template-columns: 430px 1fr;
+  gap: 24px;
+  padding: 18px;
+  align-items: start;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .layout-contenedor { grid-template-columns: 1fr; }
+}
+
+/* Paneles Industriales Modernos */
+.card-industrial {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 24px;
+  min-width: 0;
+  box-shadow: 0 6px 20px rgba(0,0,0,.35);
+}
+
+/* Formulario en Cuadrícula Organizada */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group-full {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label-professional {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input-professional{
+    background: var(--bg-input);
+    border:1px solid var(--border-color);
+    color:var(--text-main);
+
+    padding:12px 14px;
+
+    font-size:14px;
+    font-weight:600;
+
+    border-radius:10px;
+
+    width:100%;
+    box-sizing:border-box;
+
+    transition:.2s;
+}
+
+.input-professional:focus {
+  border-color: var(--primary-blue);
+  outline: none;
+}
+
+/* Casillas de Verificación Estilizadas */
+.checkbox-card{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:14px;
+
+    padding:14px;
+
+    border-radius:10px;
+
+    font-size:12px;
+}
+/* REGLAS DE IMPRESIÓN ESTRICTAS (Corrige el desborde del PDF) */
+@media print {
+  body * {
+    visibility: hidden; /* Oculta todo por defecto */
+  }
+  .modal-impresion-termica, .modal-impresion-termica * {
+    visibility: visible; /* Solo muestra el Váucher */
+  }
+  .modal-impresion-termica {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+  }
+  .print-hidden {
+    display: none !important; /* Elimina botones en el papel */
+  }
+}

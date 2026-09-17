@@ -1,0 +1,145 @@
+.maquinista-screen {
+  background-color: #020617;
+  color: #f8fafc;
+  min-height: 100vh;
+  padding: 20px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.maquinista-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #1e293b;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.maquinista-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #eab308;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-bar {
+  background-color: #0f172a;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #334155;
+  font-size: 12px;
+  font-weight: bold;
+  color: #94a3b8;
+}
+
+.grid-maquinista {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .grid-maquinista {
+    grid-template-columns: 3fr 2fr;
+  }
+}
+
+/* Tarjetas principales */
+.panel-tareas {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.panel-tareas h3 {
+  margin-top: 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+/* Alerta de tarea activa gigante */
+.tarea-activa-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+  border-radius: 10px;
+  padding: 25px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.contenedor-gigante {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 36px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 2px;
+  margin: 15px 0;
+  background-color: #020617;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+}
+
+.ubicacion-badge-gigante {
+  display: inline-block;
+  background-color: #d97706;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.btn-maquinista-accion {
+  width: 100%;
+  background-color: #eab308;
+  color: #000;
+  border: none;
+  padding: 20px;
+  font-size: 18px;
+  font-weight: 900;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background-color 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-maquinista-accion:hover {
+  background-color: #ca8a04;
+}
+
+/* Lista de historial / cola secundaria */
+.lista-tareas-cola {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item-tarea-cola {
+  background-color: #020617;
+  border: 1px solid #1e293b;
+  padding: 12px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.estado-badge {
+  font-size: 10px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.estado-badge.pendiente { background-color: #1e3a8a; color: #60a5fa; }
+.estado-badge.espera { background-color: #78350f; color: #f59e0b; }
