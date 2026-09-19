@@ -10,8 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "mysql2": "^3.24.4",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
@@ -24,5 +28,18 @@
     "tailwindcss": "^4.3.2",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
-  }
+  },
+  "description": "Este sistema se encuentra actualmente en **fase de desarrollo activo**. Aunque las funciones principales de registro, persistencia de contenedores y generación de tickets térmicos son 100% operativas, se está trabajando activamente en la optimización de los siguientes módulos: * [ ] Corrección de detalles visuales en el renderizado de la matriz tridimensional. * [ ] Optimización de la interactividad bidireccional entre las celdas libres y los selectores del formulario. * [ ] Refactorización de la persistencia de estados locales.",
+  "main": "postcss.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ttykko/deposito-de-contenedores.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ttykko/deposito-de-contenedores/issues"
+  },
+  "homepage": "https://github.com/Ttykko/deposito-de-contenedores#readme"
 }

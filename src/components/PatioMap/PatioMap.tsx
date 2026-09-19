@@ -2,16 +2,14 @@ import React, { useState, useMemo } from 'react';
 import type { RegistroContenedor } from '../../types';
 import './PatioMap.css'; 
 
-// En PatioMap.tsx
 interface PatioMapProps {
   registros: RegistroContenedor[];
-  fondoActivo: number;
-  onSeleccionarContenedor: (reg: RegistroContenedor) => void;
-  onActualizarRegistros: (regs: RegistroContenedor[]) => void;
-  onSeleccionarSlotVacio: (bloque: string, bay: number, pos: number, piso: number, fondo: number) => void;
-  onSolicitarRetiro: (codigoContenedor: string) => void; // <--- ASEGÚRATE DE QUE ESTA LÍNEA EXISTA
+  onSeleccionarContenedor?: (reg: RegistroContenedor) => void;
+  onSeleccionarSlotVacio?: (bloque: 'A' | 'B' | 'C' | 'D', bay: number, posicion: number, piso: number, filaFondo: number) => void;
+  onSolicitarRetiro?: (contenedorCodigo: string) => void;
+  onActualizarRegistros?: (actualizados: RegistroContenedor[]) => void; // Tu versión original
+  fondoActivo: number; 
 }
-
 export const PatioMap: React.FC<PatioMapProps> = ({ 
   registros, 
   onSeleccionarContenedor, 

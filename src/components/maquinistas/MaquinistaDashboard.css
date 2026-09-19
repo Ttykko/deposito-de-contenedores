@@ -1,3 +1,6 @@
+/* ==========================================================================
+   CSS: src/components/maquinistas/MaquinistaDashboard.css (Refactorizado Premium)
+   ========================================================================== */
 .maquinista-screen {
   background-color: #020617;
   color: #f8fafc;
@@ -41,9 +44,9 @@
   gap: 20px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .grid-maquinista {
-    grid-template-columns: 3fr 2fr;
+    grid-template-columns: 3fr 2fr; /* Proporciones limpias de pantalla dividida */
   }
 }
 
@@ -65,14 +68,31 @@
 
 /* Alerta de tarea activa gigante */
 .tarea-activa-card {
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0b1329 100%);
   border: 2px solid #3b82f6;
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
   border-radius: 10px;
   padding: 25px;
   text-align: center;
   margin-bottom: 20px;
+  transition: all 0.3s ease;
 }
+
+/* Modificadores dinámicos de bordes para la tarjeta principal */
+.tarea-activa-card.estado-ingreso { border-color: #2563eb; box-shadow: 0 0 20px rgba(37, 99, 235, 0.2); }
+.tarea-activa-card.estado-retiro { border-color: #fbbf24; box-shadow: 0 0 20px rgba(251, 191, 36, 0.2); }
+
+/* Etiquetas dinámicas de instrucción superior */
+.instruccion-label {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: 4px;
+}
+.instruccion-label.ingreso { color: #3b82f6; }
+.instruccion-label.retiro { color: #eab308; }
 
 .contenedor-gigante {
   font-family: 'Courier New', Courier, monospace;
@@ -87,9 +107,9 @@
   border: 1px solid #334155;
 }
 
+/* Badges dinámicos de la ubicación 5D */
 .ubicacion-badge-gigante {
   display: inline-block;
-  background-color: #d97706;
   color: white;
   padding: 8px 16px;
   border-radius: 6px;
@@ -97,25 +117,41 @@
   font-weight: bold;
   margin-bottom: 20px;
 }
+.ubicacion-badge-gigante.ingreso { background-color: #1e40af; }
+.ubicacion-badge-gigante.retiro { background-color: #78350f; }
+
+/* Desglose de servicios de maquinaria en cabina */
+.panel-maniobras-autorizadas {
+  border-top: 1px solid #1e293b;
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.lista-maniobras {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 16px;
+}
 
 .btn-maquinista-accion {
   width: 100%;
-  background-color: #eab308;
-  color: #000;
   border: none;
-  padding: 20px;
-  font-size: 18px;
+  padding: 18px;
+  font-size: 16px;
   font-weight: 900;
   border-radius: 8px;
   cursor: pointer;
   text-transform: uppercase;
-  transition: background-color 0.2s;
+  transition: opacity 0.2s;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-top: 15px;
 }
-
-.btn-maquinista-accion:hover {
-  background-color: #ca8a04;
-}
+.btn-maquinista-accion:hover { opacity: 0.9; }
 
 /* Lista de historial / cola secundaria */
 .lista-tareas-cola {
@@ -134,12 +170,18 @@
   align-items: center;
 }
 
+/* Modificadores de color para los ítems completados en verde */
+.item-tarea-cola.status-ok {
+  border-color: #16a34a;
+  background-color: #022c22;
+}
+
 .estado-badge {
   font-size: 10px;
   font-weight: bold;
   padding: 4px 8px;
   border-radius: 4px;
 }
-
 .estado-badge.pendiente { background-color: #1e3a8a; color: #60a5fa; }
 .estado-badge.espera { background-color: #78350f; color: #f59e0b; }
+.estado-badge.ok-green { background-color: #15803d; color: #fff; }
