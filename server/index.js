@@ -104,39 +104,35 @@ app.get('/api/contenedores', async (req, res) => {
 });
 
 // ==========================================================================
-// 📥 ENDPOINT POST: REGISTRAR UN CONTENEDOR NUEVO (Ley de Gravedad Inteligente)
+// 📥 ENDPOINT POST: REGISTRAR UN CONTENEDOR NUEVO (SINCRONIZACIÓN ATÓMICA)
 // ==========================================================================
 app.post('/api/contenedores', async (req, res) => {
   const n = req.body;
   const { ubicacionMapa } = n;
   if (!ubicacionMapa) return res.status(400).json({ message: "Ubicación requerida." });
   
-  // Extraemos las coordenadas de la matriz 5D enviadas por el plano
   let { bloque, bay, posicion, piso, filaFondo } = ubicacionMapa;
   const conn = await pool.getConnection();
   
   try {
     await conn.beginTransaction();
 
-    // 1. CONTROL DE ANTICOLISIÓN: Validamos si el slot exacto ya está ocupado físicamente
+    // 1. CONTROL DE ANTICOLISIÓN: Validamos si la celda 5D ya está ocupada
     const [slots] = await conn.query(
       'SELECT id FROM patio_mapa WHERE bloque=? AND bay=? AND posicion=? AND piso=? AND fila_fondo=?', 
       [bloque, bay, posicion, piso, filaFondo]
     );
     if (slots.length > 0) {
       conn.release();
-      return res.status(409).json({ message: "¡Conflicto de patio! El slot seleccionado ya está ocupado." });
+      return res.status(409).json({ message: "¡Conflicto! El slot seleccionado ya está ocupado físicamente." });
     }
 
-    // 2. LEY DE GRAVEDAD INTELIGENTE (Auto-ajustable ante despachos previos)
+    // 2. LEY DE GRAVEDAD LOGÍSTICA
     if (piso > 1) {
       const [soporte] = await conn.query(
         'SELECT id FROM patio_mapa WHERE bloque=? AND bay=? AND posicion=? AND piso=? AND fila_fondo=?', 
         [bloque, bay, posicion, piso - 1, filaFondo]
       );
-      
-      // REGLA DE NEGOCIO PREMIUM: Si el piso inferior está vacío porque la columna fue despachada,
-      // el sistema reajusta dinámicamente la coordenada al Piso 1 para asentar la base en el suelo.
       if (soporte.length === 0) {
         piso = 1; 
         n.ubicacionMapa.piso = 1;
@@ -144,36 +140,59 @@ app.post('/api/contenedores', async (req, res) => {
       }
     }
 
-    // 3. INSERCIÓN DE LA UNIDAD LOGÍSTICA EN MYSQL
-       // Fragmento corregido dentro del app.post en server/index.js:
-    const q = `INSERT INTO contenedores (sigla, tipo, estado_carga, cliente, rut_cliente, sello, rut_conductor, nombre_conductor, patente_camion, guia_referencia, transportista, servicio_desc, valor_almacenaje, sobre_estadia, desconsolidado, consolidado, rampa_manejo, iva, total, estado_pago, digitador, estado_operativo, fecha_ingreso) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'EN_ESPERA_GATE', ?)`;
+    // 3. INSERCIÓN TOTALMENTE ALINEADA (23 Columnas = 23 Parámetros exactos)
+    const q = `
+      INSERT INTO contenedores (
+        sigla, tipo, estado_carga, cliente, rut_cliente, 
+        sello, rut_conductor, nombre_conductor, patente_camion, guia_referencia, 
+        transportista, servicio_desc, valor_almacenaje, sobre_estadia, desconsolidado, 
+        consolidado, rampa_manejo, iva, total, estado_pago, 
+        digitador, estado_operativo, fecha_ingreso
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'EN_ESPERA_GATE', ?)
+    `;
     
     const [resC] = await conn.query(q, [
-      n.contenedor, n.tipo, n.estadoCarga, n.cliente, n.rutCliente, n.sello, 
-      n.rutConductor, n.conductor, n.patente, n.guia, n.transportista, 
-      n.servicioDesc, n.valorAlmacenaje, n.sobreEstadia, n.desconsolidado, n.consolidado, 
-      n.rampaManejo, n.iva, n.total, n.estadoPago, n.digitador, n.fechaIngreso
+      n.contenedor,
+      n.tipo,
+      n.estadoCarga,
+      n.cliente,
+      n.rutCliente,
+      n.sello,
+      n.rutConductor,
+      n.conductor,
+      n.patente,
+      n.guia,
+      n.transportista,
+      n.servicioDesc,
+      Number(n.valorAlmacenaje || 0),
+      Number(n.sobreEstadia || 0),
+      Number(n.desconsolidado || 0),
+      Number(n.consolidado || 0),
+      Number(n.rampaManejo || 0),
+      Number(n.iva || 0),
+      Number(n.total || 0),
+      n.estadoPago || 'PAGADO',
+      n.digitador,
+      n.fechaIngreso
     ]);
 
-    // 4. PERSISTENCIA EN EL MAPA INTERACTIVO TRIDIMENSIONAL
+    // 4. PERSISTENCIA RELACIONAL EN EL MAPA INTERACTIVO
     await conn.query(
-      'INSERT INTO patio_mapa (contenedor_id, bloque, bay, posicion, piso, fila_fondo) VALUES (?,?,?,?,?,?)', 
+      'INSERT INTO patio_mapa (contenedor_id, bloque, bay, posicion, piso, fila_fondo) VALUES (?, ?, ?, ?, ?, ?)', 
       [resC.insertId, bloque, bay, posicion, piso, filaFondo]
     );
 
     await conn.commit();
     conn.release();
-
-    // 📢 TRANSMISIÓN BROADCAST AL INSTANTE PARA SINCRO EN TIEMPO REAL
+    
+    // Transmisión inmediata de eventos por Sockets
     req.io.emit('patio_actualizado');
-
-    // Retornamos el objeto exacto adaptado al filtro del frontend
+    
     res.status(201).json({ ...n, id: String(resC.insertId), estadoFlujo: 'EN_ESPERA_GATE' });
-
   } catch (error) {
     await conn.rollback();
     conn.release();
-    console.error("❌ Error interno en registro de patio:", error.message);
+    console.error("❌ ERROR CRÍTICO EN POST CONTENEDORES:", error.message);
     res.status(500).json({ message: error.message });
   }
 });
@@ -182,7 +201,6 @@ app.post('/api/contenedores', async (req, res) => {
 // ==========================================================================
 // 🔄 ENDPOINT PUT: FLUJO DE ÓRDENES Y AUDITORÍA DE PATIO (Sincronización instantánea)
 // ==========================================================================
-// 🔄 ENDPOINT PUT: CAMBIAR ESTADO DE LA ORDEN (Ingresos y Despachos en Patio)
 app.put('/api/contenedores/:id/cambiar-estado', async (req, res) => {
   const { id } = req.params;
   const { nuevoEstado } = req.body;
@@ -199,21 +217,117 @@ app.put('/api/contenedores/:id/cambiar-estado', async (req, res) => {
 });
 
 // ==========================================================================
-// 🖨️ ENDPOINT PUT: VISACIÓN FINAL DE INGRESOS Y RETIROS DESDE GARITA (FIJADO)
+// 📥 ENDPOINT POST: REGISTRAR UN CONTENEDOR NUEVO (Sincronizado)
 // ==========================================================================
-app.put('/api/contenedores/:id/finalizar-salida', async (req, res) => {
-  const { id } = req.params;
-  const r = req.body; 
+app.post('/api/contenedores', async (req, res) => {
+  const n = req.body;
+  const { ubicacionMapa } = n;
+  if (!ubicacionMapa) return res.status(400).json({ message: "Ubicación requerida." });
+  
+  let { bloque, bay, posicion, piso, filaFondo } = ubicacionMapa;
+  const conn = await pool.getConnection();
   
   try {
-    // Forzamos numéricos puros para el motor relacional de MySQL
+    await conn.beginTransaction();
+
+    // 1. ANTICOLISIÓN: Validamos si el slot exacto ya está ocupado físicamente
+    const [slots] = await conn.query(
+      'SELECT id FROM patio_mapa WHERE bloque=? AND bay=? AND posicion=? AND piso=? AND fila_fondo=?', 
+      [bloque, bay, posicion, piso, filaFondo]
+    );
+    if (slots.length > 0) {
+      conn.release();
+      return res.status(409).json({ message: "¡Conflicto de patio! El slot seleccionado ya está ocupado." });
+    }
+
+    // 2. LEY DE GRAVEDAD INTELIGNETE
+    if (piso > 1) {
+      const [soporte] = await conn.query(
+        'SELECT id FROM patio_mapa WHERE bloque=? AND bay=? AND posicion=? AND piso=? AND fila_fondo=?', 
+        [bloque, bay, posicion, piso - 1, filaFondo]
+      );
+      if (soporte.length === 0) {
+        piso = 1; 
+        n.ubicacionMapa.piso = 1;
+        n.ubicacionTexto = `B-${bloque} | BAY-${bay} | POS-${posicion} | PISO-1 | FONDO-${filaFondo}`;
+      }
+    }
+
+    // 3. INSERCIÓN ATÓMICA CON PARÁMETROS ORDENADOS SEGÚN TU TABLA MYSQL
+    const q = `
+      INSERT INTO contenedores (
+        sigla, tipo, estado_carga, cliente, rut_cliente, 
+        sello, rut_conductor, nombre_conductor, patente_camion, guia_referencia, 
+        transportista, servicio_desc, valor_almacenaje, sobre_estadia, desconsolidado, 
+        consolidado, rampa_manejo, iva, total, estado_pago, 
+        digitador, estado_operativo, fecha_ingreso
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'EN_ESPERA_GATE', ?)
+    `;
+    
+    const [resC] = await conn.query(q, [
+      n.contenedor,             // sigla (Ej: MSKU1234567)
+      n.tipo,                   // tipo
+      n.estadoCarga,            // estado_carga
+      n.cliente,                // cliente
+      n.rutCliente,             // rut_cliente
+      n.sello,                  // sello
+      n.rutConductor,           // rut_conductor
+      n.conductor,              // nombre_conductor
+      n.patente,                // patente_camion
+      n.guia,                   // guia_referencia
+      n.transportista,          // transportista
+      n.servicioDesc,           // servicio_desc
+      Number(n.valorAlmacenaje || 0),
+      Number(n.sobreEstadia || 0),
+      Number(n.desconsolidado || 0),
+      Number(n.consolidado || 0),
+      Number(n.rampaManejo || 0),
+      Number(n.iva || 0),
+      Number(n.total || 0),
+      n.estadoPago || 'PAGADO',
+      n.digitador,
+      n.fechaIngreso            // fecha_ingreso
+    ]);
+
+    // 4. PERSISTENCIA EN EL MAPA INTERACTIVO TRIDIMENSIONAL
+    await conn.query(
+      'INSERT INTO patio_mapa (contenedor_id, bloque, bay, posicion, piso, fila_fondo) VALUES (?,?,?,?,?,?)', 
+      [resC.insertId, bloque, bay, posicion, piso, filaFondo]
+    );
+
+    await conn.commit();
+    conn.release();
+
+    // 📢 TRANSMISIÓN BROADCAST AL INSTANTE POR WEBSOCKETS
+    req.io.emit('patio_actualizado');
+
+    res.status(201).json({ ...n, id: String(resC.insertId), estadoFlujo: 'EN_ESPERA_GATE' });
+
+  } catch (error) {
+    await conn.rollback();
+    conn.release();
+    console.error("❌ ERROR INTERNO EN POST CONTENEDORES:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ==========================================================================
+// 🖨️ ENDPOINT PUT MASTER ALIAS: RECEPTOR DE ENTRADAS Y SALIDAS (BLINDADO SERRACOR)
+// ==========================================================================
+app.put(['/api/contenedores/:id/finalizar-salida', '/api/contenedor/:id/finalizar-salida'], async (req, res) => {
+  const { id } = req.params;
+  const r = req.body;
+  
+  try {
+    // Sanitización y casteo forzado de tipos numéricos DECIMAL para MySQL 9
+    const idSeguro = Number(id);
     const ivaSeguro = Number(r.iva || 0);
     const totalSeguro = Number(r.total || 0);
     const sobreEstadiaSegura = Number(r.sobreEstadia || 0);
     const fechaSalidaSegura = r.fechaSalida || new Date().toLocaleString('es-CL');
 
     if (r.esDespacho) {
-      // 📤 CASO RETIRO: El contenedor se va. Actualiza a COMPLETADO y libera el slot físico.
+      // 📤 CASO DESPACHO / RETIRO: El contenedor se va en el camión
       const queryRetiro = `
         UPDATE contenedores 
         SET estado_operativo = 'COMPLETADO', 
@@ -223,30 +337,40 @@ app.put('/api/contenedores/:id/finalizar-salida', async (req, res) => {
             total = ? 
         WHERE id = ?
       `;
-      await pool.query(queryRetiro, [fechaSalidaSegura, sobreEstadiaSegura, ivaSeguro, totalSeguro, id]);
-      await pool.query('DELETE FROM patio_mapa WHERE contenedor_id = ?', [id]);
-      
-      req.io.emit('patio_actualizado');
-      return res.json({ success: true, message: "RETIRO_CONFIRMADO_OK" });
-    } else {
-      // 📥 CASO INGRESO: El contenedor llegó. Se fija como 'EN_PATIO' (Ya aceptado por el ALTER ENUM)
+      await pool.query(queryRetiro, [fechaSalidaSegura, sobreEstadiaSegura, ivaSeguro, totalSeguro, idSeguro]);
+      await pool.query('DELETE FROM patio_mapa WHERE contenedor_id = ?', [idSeguro]);
+         } else {
+      // 📥 CASO INGRESO / ALTA EN PATIO DEFINITIVA
       const queryIngreso = `
         UPDATE contenedores 
-        SET estado_operativo = 'EN_PATIO', 
+        SET estado_operativo = ?, 
             iva = ?, 
             total = ? 
         WHERE id = ?
       `;
-      await pool.query(queryIngreso, [ivaSeguro, totalSeguro, id]);
-      
-      req.io.emit('patio_actualizado');
-      return res.json({ success: true, message: "INGRESO_ALMACENADO_BD" });
+      // Cambiamos a 'COMPLETADO' para que el contenedor desaparezca de la lista de alertas
+      // y la grúa del maquinista registre la labor como finalizada en su turno.
+      await pool.query(queryIngreso, ['COMPLETADO', ivaSeguro, totalSeguro, idSeguro]);
     }
+
+
+
+    
+    // Transmisión inmediata por WebSockets para redibujar el plano en las grúas
+    if (req.io) {
+      req.io.emit('patio_actualizado');
+    } else if (io) {
+      io.emit('patio_actualizado');
+    }
+    
+    return res.json({ success: true, message: "INGRESO_ALMACENADO_BD" });
   } catch (error) {
-    console.error("❌ ERROR CRÍTICO EN FINALIZE MYSQL:", error.message);
+    console.error("❌ ERROR CRÍTICO EN FINALIZE RELACIONAL:", error.message);
     res.status(500).json({ message: error.message });
   }
 });
+
+
 
 
 
